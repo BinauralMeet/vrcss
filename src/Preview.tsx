@@ -3,7 +3,7 @@ import { i18nSupportedLngs, useTranslation } from "./locales"
 import TranslateIcon from '@mui/icons-material/Translate'
 import Button from '@mui/material/Button'
 import {conference, Streaming} from './conference/Conference'
-import { mainButtonStyle } from './App'
+import { copyToClipboard, mainButtonStyle } from './App'
 import './App.css'
 
 export interface PreviewProps{
@@ -25,12 +25,12 @@ export function Preview(props: PreviewProps) {
   return (
     <div className="Preview">
       <Button variant='contained' style={mainButtonStyle} onClick={()=>{
-        navigator.clipboard.writeText(`rtspt://vrc.jp/${props.streaming.id}`)
+        copyToClipboard(`rtspt://vrc.jp/${props.streaming.id}`)
       }}>
         {t('windows')}
       </Button>
       <Button variant='contained' style={mainButtonStyle} onClick={()=>{
-        navigator.clipboard.writeText(`rtsp://vrc.jp/${props.streaming.id}`)
+        copyToClipboard(`rtsp://vrc.jp/${props.streaming.id}`)
       }}>
         {t('quest')}
       </Button>
