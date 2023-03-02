@@ -1,0 +1,43 @@
+.App {
+  text-align: center;
+  height: 100vh;
+  background-color: darkgray;
+}
+.App-title{
+  margin-top: 0.3em;
+  margin-bottom: 0;
+}
+
+.App-header {
+  background-color: #383c44;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 1.6vmin);
+  color: white;
+}
+
+.App-tf {
+  display:inline-box;
+  width:100px;
+}
+
+.App-mainBtText {
+  font-size: calc(10px + 1.6vmin);
+}
+
+.App-article {
+  font-size: calc(10px + 1.6vmin);
+  display: inline-block;
+}
+
+.Preview{
+  text-align: center;
+  display: inline-block;
+  width:50%;
+  vertical-align: top;
+}
+.Preview-video{
+  width: 100%;
+}
