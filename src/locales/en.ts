@@ -9,6 +9,7 @@ export const enTranslate = {
   windows: 'URL for Windows',
   quest: 'URL for Quest',
   stopSharing: 'Stop Shearing',
-  helpStart: 'The streaming URL is copied to the clipboard. Put World\'s video player in streaming mode and paste it.',
+  helpStart1: 'The streaming URL is copied to the clipboard.',
+  helpStart2: 'Put World\'s video player in streaming mode and paste it.',
 }
 export type EnKeyList = keyof typeof enTranslate

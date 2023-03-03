@@ -9,6 +9,7 @@ export const jaTranslate = {
   windows: 'Windows用URL',
   quest: 'Quest用URL',
   stopSharing: '共有停止',
-  helpStart: 'ストリーミングURLをクリップボードにコピーしました。Worldのビデオプレイヤーをストリーミングモードにして貼り付けてください。',
+  helpStart1: 'ストリーミングURLをクリップボードにコピーしました。',
+  helpStart2: 'Worldのビデオプレイヤーをストリーミングモードにして貼り付けてください。',
 }
 export type JaKeyList = keyof typeof jaTranslate

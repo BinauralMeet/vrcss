@@ -54,7 +54,7 @@ function App() {
             sharingStop(id)
           })
           setStreamings([...conference.streamings])
-          toast(t('helpStart'),  {
+          toast(<><h4>{t('helpStart1')}</h4><br />{t('helpStart2')}</>,  {
             position: "top-right",
             autoClose: 5000,
             hideProgressBar: false,
