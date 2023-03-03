@@ -51,7 +51,7 @@ export class RtcConnection{
   private connected = false
   get peer() {return this.peer_}
   private mainServer?:WebSocket
-  private device?:mediasoup.Device
+  public device?:mediasoup.Device
   private handlers = new Map<MSMessageType, (msg: MSMessage)=>void>()
   private promises = new Map<number, {resolve:(a:any)=>void, reject?:(a:any)=>void, arg?:any} >()
   private messageNumber = 1
@@ -225,6 +225,7 @@ export class RtcConnection{
   }
   private onRtpCapabilities(base: MSMessage){
     const msg = base as MSRTPCapabilitiesReply
+    //console.log('Device cap:', msg.rtpCapabilities)
     if (this.device?.loaded){
       this.resolveMessage(base)
     }else{

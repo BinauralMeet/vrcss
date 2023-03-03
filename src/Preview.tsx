@@ -13,13 +13,15 @@ export interface PreviewProps{
 export function Preview(props: PreviewProps) {
   const { t, i18n } = useTranslation();
   const ref = useRef<HTMLVideoElement>(null)
+  let first = true
   useEffect(()=>{
-    if (ref.current){
+    if (ref.current && first){
+      first = false
       const videoTrack = props.streaming.tracks.find(t=>t.track.kind==='video')
       const mediaStream = videoTrack && new MediaStream([videoTrack.track])
         ref.current.srcObject = mediaStream ? mediaStream : null
-        console.log(`useEffect ${ref.current} = ${JSON.stringify(mediaStream)}`)
-      }
+      //console.log(`useEffect ${ref.current} = ${JSON.stringify(mediaStream?.getTracks().length)}`)
+    }
   }, [])
   
   return (

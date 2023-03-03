@@ -1,6 +1,7 @@
 import { Producer } from "mediasoup-client/lib/Producer"
 import { MSTrack } from "./RtcConnection"
 import { RtcTransports } from "./RtcTransports"
+import { RtpCodecCapability } from "mediasoup-client/lib/RtpParameters"
 
 declare const d:any          //  from index.html
 
@@ -25,15 +26,15 @@ class Conference{
   public connect(){
     const room = this.createRandomString(12)
     const peer = this.createRandomString(8)
-    console.log(`connecting as ${this.rtc.peer}`)
+    console.log(`Connecting to main server ....`)
     this.rtc.connect(room, peer).then(()=>{
-      console.log(`connected as ${this.rtc.peer}`)
+      console.log(`Connected as ${this.rtc.peer}`)
     })
   }
   public streamingStart(id:string, stream: MediaStream){
     const promise = new Promise<void>((resolve, reject)=>{
       const tracks = stream.getTracks()
-      console.log(`streaming for ${tracks.length} tracks.`)
+      console.debug(`Streaming starts for ${tracks.length} tracks.`)
       const streaming: Streaming = {
         id,
         producers:[],
@@ -48,12 +49,16 @@ class Conference{
           role: id
         }
         streaming.tracks.push(msTrack)
-        this.rtc.prepareSendTransport(msTrack).then(producer=>{
+        let codec: RtpCodecCapability|undefined = undefined
+        if (track.kind === 'video'){
+          codec = this.rtc.device?.rtpCapabilities.codecs?.find(
+            c => c.mimeType === 'video/H264' && c.parameters['profile-level-id'] === '42e01f')
+        }
+        this.rtc.prepareSendTransport(msTrack, undefined, codec).then(producer=>{
           streaming.producers.push(producer)
           remain--
           if (remain === 0){
             this.rtc.streamingStart(id, streaming.producers)
-            console.log(`streaming started.`)
             resolve()
           }
         }).catch(reject)

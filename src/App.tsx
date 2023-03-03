@@ -1,5 +1,6 @@
 import React from 'react'
-import './App.css'
+import {ToastContainer, toast} from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { i18nSupportedLngs, useTranslation } from "./locales"
 import TranslateIcon from '@mui/icons-material/Translate'
 import Button from '@mui/material/Button'
@@ -8,6 +9,7 @@ import TextField from '@mui/material/TextField'
 import {InputProps} from '@mui/material/Input'
 import {conference} from './conference/Conference'
 import Preview from './Preview'
+import './App.css'
 
 
 function toInt(s: string, r=10){
@@ -52,6 +54,16 @@ function App() {
             sharingStop(id)
           })
           setStreamings([...conference.streamings])
+          toast(t('helpStart'),  {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            });
           resolve()
         }).catch(e=>{
           console.warn(JSON.stringify(e))
@@ -68,87 +80,85 @@ function App() {
     conference.streamingStop(id)
     setStreamings([...conference.streamings])
   }
-
-  return (
-    <div className="App">
-      <header className="App-header">
-        <Button variant="contained"
-          style={{ ...mainButtonStyle, backgroundColor:'dimgray', position: "absolute", top: '0.2em', right: '0.4em' }}
-          onClick={() => {
-            const idx =
-              (i18nSupportedLngs.findIndex((l:any) => l === i18n.language) + 1) %
-              i18nSupportedLngs.length;
-            i18n.changeLanguage(i18nSupportedLngs[idx]);
-          }}
-          >&nbsp;
-          <TranslateIcon />&nbsp;
-        </Button>
-        <table><tbody>
-        <tr>
-          <td className="tdr">
-            <h2 className="App-title">
-              {t('title')}
-            </h2>
-          </td>
-          <td className="tdl">
-            <Button variant="contained" style={{...mainButtonStyle, marginLeft:0}} onClick={()=>{
-                    sharingStart(width, height, fps).then(()=>{
-                      setStreamings([...conference.streamings])
-                    }).catch(e=>{
-                      console.warn(`sharingStart: ${JSON.stringify(e)}`)
-                    })
-                  }}>{t('sharingStart')}</Button>
-          </td>
-        </tr>
-        <tr>
-          <td className="tdr">
-            <div style={{display:'flex', alignItems:'center', margin:'0.2em 0.2em 0.2em 0.2em'}}>
-              {t('resolution')}&nbsp;
-              <TextField className="App-tf" label={t('height')} size='small' multiline={false} InputProps={inputProps}
-                value={width.toString()}
-                onChange={(ev)=>{setWidth(toInt(ev.target.value, 10))}}
-              />×
-              <TextField className="App-tf" label={t('width')} size='small' multiline={false} InputProps={inputProps}
-                value={height.toString()} 
-                onChange={(ev)=>{setHeight(toInt(ev.target.value, 10))}}
-              />
-              &nbsp;px
-            </div>
-          </td>
-          <td className="tdl">
+  return <div className="App">
+    <ToastContainer />
+    <header className="App-header">
+      <Button variant="contained"
+        style={{ ...mainButtonStyle, backgroundColor:'dimgray', position: "absolute", top: '0.2em', right: '0.4em' }}
+        onClick={() => {
+          const idx =
+            (i18nSupportedLngs.findIndex((l:any) => l === i18n.language) + 1) %
+            i18nSupportedLngs.length;
+          i18n.changeLanguage(i18nSupportedLngs[idx]);
+        }}
+        >&nbsp;
+        <TranslateIcon />&nbsp;
+      </Button>
+      <table><tbody>
+      <tr>
+        <td className="tdr">
+          <h2 className="App-title">
+            {t('title')}
+          </h2>
+        </td>
+        <td className="tdl">
+          <Button variant="contained" style={{...mainButtonStyle, marginLeft:0}} onClick={()=>{
+                  sharingStart(width, height, fps).then(()=>{
+                    setStreamings([...conference.streamings])
+                  }).catch(e=>{
+                    console.warn(`sharingStart: ${JSON.stringify(e)}`)
+                  })
+                }}>{t('sharingStart')}</Button>
+        </td>
+      </tr>
+      <tr>
+        <td className="tdr">
+          <div style={{display:'flex', alignItems:'center', margin:'0.2em 0.2em 0.2em 0.2em'}}>
+            {t('resolution')}&nbsp;
+            <TextField className="App-tf" label={t('height')} size='small' multiline={false} InputProps={inputProps}
+              value={width.toString()}
+              onChange={(ev)=>{setWidth(toInt(ev.target.value, 10))}}
+            />×
+            <TextField className="App-tf" label={t('width')} size='small' multiline={false} InputProps={inputProps}
+              value={height.toString()} 
+              onChange={(ev)=>{setHeight(toInt(ev.target.value, 10))}}
+            />
+            &nbsp;px
+          </div>
+        </td>
+        <td className="tdl">
+        <Button size="small" variant="contained" style={grayButtonStyle}
+          onClick={()=>{setWidth(720); setHeight(480)}}>SD(4:3)</Button>&nbsp;
+        <Button size="small" variant="contained" style={grayButtonStyle}
+          onClick={()=>{setWidth(1280); setHeight(720)}}>HD</Button>&nbsp;
+        <Button size="small" variant="contained" style={grayButtonStyle}
+          onClick={()=>{setWidth(1920); setHeight(1080)}}>Full HD</Button>
+        </td>
+      </tr>
+      <tr>
+        <td className="tdr">
+          <div style={{display:'flex', alignItems:'center', margin:'0.2em 0.2em 0.2em 0.2em'}}>
+            {t('fps')}&nbsp;
+            <TextField className="App-tf" label={t('fps')} size='small' multiline={false} InputProps={inputProps}
+              value={fps.toString()} 
+              onChange={(ev)=>{setFps(toInt(ev.target.value, 10))}}
+            />&nbsp;{t('fpsUnit')}</div>
+        </td>
+        <td className="tdl">
           <Button size="small" variant="contained" style={grayButtonStyle}
-            onClick={()=>{setWidth(720); setHeight(480)}}>SD(4:3)</Button>&nbsp;
+            onClick={()=>{setFps(5)}}>5</Button>&nbsp;
           <Button size="small" variant="contained" style={grayButtonStyle}
-            onClick={()=>{setWidth(1280); setHeight(720)}}>HD</Button>&nbsp;
+            onClick={()=>{setFps(15)}}>15</Button>&nbsp;
           <Button size="small" variant="contained" style={grayButtonStyle}
-            onClick={()=>{setWidth(1920); setHeight(1080)}}>Full HD</Button>
-          </td>
-        </tr>
-        <tr>
-          <td className="tdr">
-            <div style={{display:'flex', alignItems:'center', margin:'0.2em 0.2em 0.2em 0.2em'}}>
-              {t('fps')}&nbsp;
-              <TextField className="App-tf" label={t('fps')} size='small' multiline={false} InputProps={inputProps}
-                value={fps.toString()} 
-                onChange={(ev)=>{setFps(toInt(ev.target.value, 10))}}
-              />&nbsp;{t('fpsUnit')}</div>
-          </td>
-          <td className="tdl">
-            <Button size="small" variant="contained" style={grayButtonStyle}
-              onClick={()=>{setFps(5)}}>5</Button>&nbsp;
-            <Button size="small" variant="contained" style={grayButtonStyle}
-              onClick={()=>{setFps(15)}}>15</Button>&nbsp;
-            <Button size="small" variant="contained" style={grayButtonStyle}
-              onClick={()=>{setFps(30)}}>30</Button>
-          </td>
-        </tr>
-        </tbody></table>
-      </header>
-      <article className="App-article">
-        {previews}
-      </article>
-    </div>
-  );
+            onClick={()=>{setFps(30)}}>30</Button>
+        </td>
+      </tr>
+      </tbody></table>
+    </header>
+    <article className="App-article">
+      {previews}
+    </article>
+  </div>
 }
 
 export default App;

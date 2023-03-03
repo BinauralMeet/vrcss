@@ -38,6 +38,14 @@ const rtcConfig = {
   }
   Object.assign(configTitech, Object.assign(commonConfig, configTitech))
   
+  const configVrc = {
+    mainServer: 'wss://vrc.jp/main',
+    dataServer: 'wss://vrc.jp/main',
+    corsProxyUrl: 'https://binaural.me/cors_proxy/',
+  }
+  Object.assign(configVrc, Object.assign(commonConfig, configVrc))
+
+
   const configLocal = {
     mainServer: 'wss://localhost:3100',
     dataServer: 'wss://localhost:3100',
@@ -46,5 +54,4 @@ const rtcConfig = {
   Object.assign(configLocal, Object.assign(commonConfig, configLocal))
   
   const config = configLocal
-  
   
