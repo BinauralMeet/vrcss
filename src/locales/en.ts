@@ -4,7 +4,7 @@ export const enTranslate = {
   resolution: 'Resolution',
   width: 'Width',
   height: 'Height',
-  fps: 'framerate',
+  fps: 'Framerate',
   fpsUnit: 'frames/s',
   windows: 'URL for Windows',
   quest: 'URL for Quest',

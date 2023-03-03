@@ -54,7 +54,7 @@ class Conference{
           codec = this.rtc.device?.rtpCapabilities.codecs?.find(
             c => c.mimeType === 'video/H264' && c.parameters['profile-level-id'] === '42e01f')
         }
-        this.rtc.prepareSendTransport(msTrack, undefined, codec).then(producer=>{
+        this.rtc.prepareSendTransport(msTrack, 1500*1000, codec).then(producer=>{
           streaming.producers.push(producer)
           remain--
           if (remain === 0){
