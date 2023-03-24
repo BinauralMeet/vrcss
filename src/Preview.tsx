@@ -1,8 +1,7 @@
 import React, {useEffect, useRef} from 'react'
-import { i18nSupportedLngs, useTranslation } from "./locales"
-import TranslateIcon from '@mui/icons-material/Translate'
+import { useTranslation } from "./locales"
 import Button from '@mui/material/Button'
-import {conference, Streaming} from './conference/Conference'
+import {Streaming} from './conference/Conference'
 import { copyToClipboard, mainButtonStyle } from './App'
 import './App.css'
 
@@ -11,7 +10,7 @@ export interface PreviewProps{
     stop: () => void
 }
 export function Preview(props: PreviewProps) {
-  const { t, i18n } = useTranslation();
+  const {t} = useTranslation();
   const ref = useRef<HTMLVideoElement>(null)
   let first = true
   useEffect(()=>{

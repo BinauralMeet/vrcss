@@ -7,6 +7,7 @@ import Button from '@mui/material/Button'
 import {getDisplayMedia} from './getDisplayMedia'
 import TextField from '@mui/material/TextField'
 import {InputProps} from '@mui/material/Input'
+import {useLocation} from 'react-router-dom'
 import {conference} from './conference/Conference'
 import Preview from './Preview'
 import './App.css'
@@ -43,10 +44,14 @@ function App() {
 
   const inputProps:InputProps = {'style': {color:'white', fontSize: 30, textAlignLast:'end', height: '1.1em'}}
   const previews = streamings.map(s => <Preview streaming={s} key={s.id} stop={()=>{sharingStop(s.id)}}/>)
+  const search = useLocation().search
+  const query = new URLSearchParams(search)
+  const idInUrl = query.get('id')    
 
   function sharingStart(width:number, height:number, fps:number){
     const promise = new Promise<void>((resolve, reject) => {
-      const id = conference.createStreamId()
+      const id = idInUrl ? idInUrl : conference.createStreamId()
+      //console.log(`id:${id} idInUrl:${idInUrl}`)
       copyToClipboard(`rtspt://vrc.jp/${id}`)
       getDisplayMedia(fps, width, height).then((ms)=>{
         conference.streamingStart(id, ms).then(()=>{

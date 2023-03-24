@@ -5,6 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import {i18nInit} from './locales'
 import { conference } from './conference/Conference';
+import {BrowserRouter} from 'react-router-dom'
 
 i18nInit().then(main)
 
@@ -14,7 +15,9 @@ function main(){
   );
   root.render(
     <React.StrictMode>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </React.StrictMode>
   )
   // If you want to start measuring performance in your app, pass a function
