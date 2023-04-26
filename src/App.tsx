@@ -46,6 +46,7 @@ function App() {
   const [height, setHeight] = React.useState<number>(720)
   const [fps, setFps] = React.useState<number>(30)
   const [hint, setHint] = React.useState<string>('motion')
+  const [bitrate, setBitrate] = React.useState<number>(1500*1000)
   const [streamings, setStreamings] = React.useState(conference.streamings)
 
   const inputProps:InputProps = {'style': {color:'white', fontSize: 30, textAlignLast:'end', height: '1.1em'}}
@@ -60,7 +61,7 @@ function App() {
       //console.log(`id:${id} idInUrl:${idInUrl}`)
       copyToClipboard(`rtspt://vrc.jp/${id}`)
       getDisplayMedia(fps, width, height).then((ms)=>{
-        conference.streamingStart(id, ms).then(()=>{
+        conference.streamingStart(id, ms, bitrate).then(()=>{
           ms.getVideoTracks()[0].addEventListener('ended', ()=>{
             sharingStop(id)
           })
@@ -124,14 +125,14 @@ function App() {
         </td>
       </tr>
       <tr>
-        <td className="tdr">
+        <td className="tdl">
           <div style={{display:'flex', alignItems:'center', margin:'0.2em 0.2em 0.2em 0.2em'}}>
             {t('resolution')}&nbsp;
-            <TextField className="App-tf" label={t('height')} size='small' multiline={false} InputProps={inputProps}
+            <TextField className="App-tf" label={t('width')} size='small' multiline={false} InputProps={inputProps}
               value={width.toString()}
               onChange={(ev)=>{setWidth(toInt(ev.target.value, 10))}}
             />×
-            <TextField className="App-tf" label={t('width')} size='small' multiline={false} InputProps={inputProps}
+            <TextField className="App-tf" label={t('height')} size='small' multiline={false} InputProps={inputProps}
               value={height.toString()} 
               onChange={(ev)=>{setHeight(toInt(ev.target.value, 10))}}
             />
@@ -139,16 +140,16 @@ function App() {
           </div>
         </td>
         <td className="tdl">
-        <Button size="small" variant="contained" style={grayButtonStyle}
+        <Button size="small" variant="contained" style={width===720&&height===480 ? silverButtonStyle : grayButtonStyle}
           onClick={()=>{setWidth(720); setHeight(480)}}>SD(4:3)</Button>&nbsp;
-        <Button size="small" variant="contained" style={grayButtonStyle}
+        <Button size="small" variant="contained" style={width===1280&&height===720 ? silverButtonStyle : grayButtonStyle}
           onClick={()=>{setWidth(1280); setHeight(720)}}>HD</Button>&nbsp;
-        <Button size="small" variant="contained" style={grayButtonStyle}
+        <Button size="small" variant="contained" style={width===1920&&height===1080 ? silverButtonStyle : grayButtonStyle}
           onClick={()=>{setWidth(1920); setHeight(1080)}}>Full HD</Button>
         </td>
       </tr>
       <tr>
-        <td className="tdr">
+        <td className="tdl">
           <div style={{display:'flex', alignItems:'center', margin:'0.2em 0.2em 0.2em 0.2em'}}>
             {t('fps')}&nbsp;
             <TextField className="App-tf" label={t('fps')} size='small' multiline={false} InputProps={inputProps}
@@ -157,22 +158,28 @@ function App() {
             />&nbsp;{t('fpsUnit')}</div>
         </td>
         <td className="tdl">
-          <Button size="small" variant="contained" style={grayButtonStyle}
+          <Button size="small" variant="contained" style={fps===5 ? silverButtonStyle : grayButtonStyle}
             onClick={()=>{setFps(5)}}>5</Button>&nbsp;
-          <Button size="small" variant="contained" style={grayButtonStyle}
+          <Button size="small" variant="contained" style={fps===15 ? silverButtonStyle : grayButtonStyle}
             onClick={()=>{setFps(15)}}>15</Button>&nbsp;
-          <Button size="small" variant="contained" style={grayButtonStyle}
+          <Button size="small" variant="contained" style={fps===30 ? silverButtonStyle : grayButtonStyle}
             onClick={()=>{setFps(30)}}>30</Button>
-          &nbsp;&nbsp;
-          <Button size="small" variant="contained" style={hint==='motion' ? silverButtonStyle : grayButtonStyle}
-            onClick={()=>{setHint('motion')}}>motion</Button>&nbsp;
-          <Button size="small" variant="contained" style={hint==='detail' ? silverButtonStyle : grayButtonStyle}
-            onClick={()=>{setHint('detail')}}>detail</Button>&nbsp;
-          <Button size="small" variant="contained" style={hint==='text' ? silverButtonStyle : grayButtonStyle}
-            onClick={()=>{setHint('text')}}>text</Button>
-
         </td>
       </tr>
+      <tr><td className="tdl">
+        {t('encode')}<TextField className="App-tf-long" label={t('videoBps')} size='small' multiline={false} InputProps={inputProps}
+              value={bitrate.toString()} 
+              onChange={(ev)=>{setBitrate(toInt(ev.target.value, 10))}}
+        />bps
+      </td>
+      <td className='tdl'>
+        <Button size="small" variant="contained" style={hint==='motion' ? silverButtonStyle : grayButtonStyle}
+            onClick={()=>{setHint('motion')}}>motion</Button>&nbsp;
+        <Button size="small" variant="contained" style={hint==='detail' ? silverButtonStyle : grayButtonStyle}
+            onClick={()=>{setHint('detail')}}>detail</Button>&nbsp;
+        <Button size="small" variant="contained" style={hint==='text' ? silverButtonStyle : grayButtonStyle}
+            onClick={()=>{setHint('text')}}>text</Button>        
+      </td></tr>
       </tbody></table>
     </header>
     <article className="App-article">

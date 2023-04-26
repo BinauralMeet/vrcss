@@ -6,6 +6,8 @@ export const jaTranslate = {
   height: '縦',
   fps: 'FPS',
   fpsUnit: 'フレーム／秒',
+  encode: 'エンコード',
+  videoBps: 'ビデオのビット/秒',
   windows: 'Windows用URL',
   quest: 'Quest用URL',
   stopSharing: '共有停止',

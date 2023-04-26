@@ -6,6 +6,8 @@ export const enTranslate = {
   height: 'Height',
   fps: 'Framerate',
   fpsUnit: 'frames/s',
+  encode: 'Encoding',
+  videoBps: 'Video bps',
   windows: 'URL for Windows',
   quest: 'URL for Quest',
   stopSharing: 'Stop Shearing',

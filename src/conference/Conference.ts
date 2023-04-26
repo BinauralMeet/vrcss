@@ -31,7 +31,7 @@ class Conference{
       console.log(`Connected as ${this.rtc.peer}`)
     })
   }
-  public streamingStart(id:string, stream: MediaStream){
+  public streamingStart(id:string, stream: MediaStream, maxBitRate:number){
     const promise = new Promise<void>((resolve, reject)=>{
       const tracks = stream.getTracks()
       console.debug(`Streaming starts for ${tracks.length} tracks.`)
@@ -54,7 +54,7 @@ class Conference{
           codec = this.rtc.device?.rtpCapabilities.codecs?.find(
             c => c.mimeType === 'video/H264' && c.parameters['profile-level-id'] === '42e01f')
         }
-        this.rtc.prepareSendTransport(msTrack, 1500*1000, codec).then(producer=>{
+        this.rtc.prepareSendTransport(msTrack, maxBitRate, codec).then(producer=>{
           streaming.producers.push(producer)
           remain--
           if (remain === 0){
