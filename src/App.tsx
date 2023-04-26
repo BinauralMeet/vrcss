@@ -34,12 +34,18 @@ export const grayButtonStyle:React.CSSProperties = {
   fontSize:'calc(10px + 1.6vmin)',
   backgroundColor:'gray'
 }
+export const silverButtonStyle:React.CSSProperties = {
+  textTransform:'none',
+  fontSize:'calc(10px + 1.6vmin)',
+  backgroundColor:'silver'
+}
 
 function App() {
   const { t, i18n } = useTranslation();
   const [width, setWidth] = React.useState<number>(1280)
   const [height, setHeight] = React.useState<number>(720)
   const [fps, setFps] = React.useState<number>(30)
+  const [hint, setHint] = React.useState<string>('motion')
   const [streamings, setStreamings] = React.useState(conference.streamings)
 
   const inputProps:InputProps = {'style': {color:'white', fontSize: 30, textAlignLast:'end', height: '1.1em'}}
@@ -48,7 +54,7 @@ function App() {
   const query = new URLSearchParams(search)
   const idInUrl = query.get('id')    
 
-  function sharingStart(width:number, height:number, fps:number){
+  function sharingStart(width:number, height:number, fps:number, hint:string){
     const promise = new Promise<void>((resolve, reject) => {
       const id = idInUrl ? idInUrl : conference.createStreamId()
       //console.log(`id:${id} idInUrl:${idInUrl}`)
@@ -58,6 +64,7 @@ function App() {
           ms.getVideoTracks()[0].addEventListener('ended', ()=>{
             sharingStop(id)
           })
+          ms.getVideoTracks()[0].contentHint = hint
           setStreamings([...conference.streamings])
           toast(<><h4>{t('helpStart1')}</h4><br />{t('helpStart2')}</>,  {
             position: "top-right",
@@ -108,7 +115,7 @@ function App() {
         </td>
         <td className="tdl">
           <Button variant="contained" style={{...mainButtonStyle, marginLeft:0}} onClick={()=>{
-                  sharingStart(width, height, fps).then(()=>{
+                  sharingStart(width, height, fps, hint).then(()=>{
                     setStreamings([...conference.streamings])
                   }).catch(e=>{
                     console.warn(`sharingStart: ${JSON.stringify(e)}`)
@@ -156,6 +163,14 @@ function App() {
             onClick={()=>{setFps(15)}}>15</Button>&nbsp;
           <Button size="small" variant="contained" style={grayButtonStyle}
             onClick={()=>{setFps(30)}}>30</Button>
+          &nbsp;&nbsp;
+          <Button size="small" variant="contained" style={hint==='motion' ? silverButtonStyle : grayButtonStyle}
+            onClick={()=>{setHint('motion')}}>motion</Button>&nbsp;
+          <Button size="small" variant="contained" style={hint==='detail' ? silverButtonStyle : grayButtonStyle}
+            onClick={()=>{setHint('detail')}}>detail</Button>&nbsp;
+          <Button size="small" variant="contained" style={hint==='text' ? silverButtonStyle : grayButtonStyle}
+            onClick={()=>{setHint('text')}}>text</Button>
+
         </td>
       </tr>
       </tbody></table>
