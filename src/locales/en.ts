@@ -10,6 +10,7 @@ export const enTranslate = {
   videoBps: 'Video bps',
   windows: 'URL for Windows',
   quest: 'URL for Quest',
+  apply: 'update',
   stopSharing: 'Stop Shearing',
   helpStart1: 'The streaming URL is copied to the clipboard.',
   helpStart2: 'Put World\'s video player in streaming mode and paste it.',

@@ -77,6 +77,28 @@ class Conference{
     this.rtc.RemoveTrackByRole(true, id)
     return true
   }
+  public applyConstrants(id: string, width:number, height:number, fps:number, hint:string, bitrate: number){
+    const streaming = this.streamings.find(s => s.id === id)
+    if (!streaming){
+      console.warn(`streamingStop(): streaming id='${id}' not found.`)
+      return false
+    }
+    const videoIndex = streaming.tracks.findIndex(t => t.track.kind === 'video')
+    if (videoIndex === -1) return false
+    const video = streaming.tracks[videoIndex]
+    video.track.applyConstraints({
+      width: width ? {ideal: width} : undefined,
+      height: height ? {ideal: height} : undefined,
+      frameRate: fps ? {ideal: fps}: undefined,
+    })
+    video.track.contentHint = hint
+    const producer = streaming.producers[videoIndex]
+    const params:RTCRtpEncodingParameters ={
+      maxBitrate:bitrate
+    }
+    producer.setRtpEncodingParameters(params)
+    return true
+  }
 }
 
 export const conference = new Conference()

@@ -24,7 +24,7 @@
 }
 .App-tf-long {
   display:inline-box;
-  width:170px;
+  width:130px;
 }
 .tdr {
   text-align: right;
@@ -50,6 +50,9 @@
   display: inline-block;
   width:50%;
   vertical-align: top;
+  border: 2px solid dimgray;
+  padding: 4px;
+  margin: 4px;
 }
 .Preview-video{
   width: 100%;

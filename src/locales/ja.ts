@@ -10,6 +10,7 @@ export const jaTranslate = {
   videoBps: 'ビデオのビット/秒',
   windows: 'Windows用URL',
   quest: 'Quest用URL',
+  apply: '更新',
   stopSharing: '共有停止',
   helpStart1: 'ストリーミングURLをクリップボードにコピーしました。',
   helpStart2: 'Worldのビデオプレイヤーをストリーミングモードにして貼り付けてください。',

@@ -8,20 +8,21 @@ import './App.css'
 export interface PreviewProps{
     streaming: Streaming
     stop: () => void
+    apply: () => void
 }
 export function Preview(props: PreviewProps) {
   const {t} = useTranslation();
   const ref = useRef<HTMLVideoElement>(null)
-  let first = true
+  const firstRef = useRef<boolean>(true)
   useEffect(()=>{
-    if (ref.current && first){
-      first = false
+    if (ref.current && firstRef.current){
+      firstRef.current = false
       const videoTrack = props.streaming.tracks.find(t=>t.track.kind==='video')
       const mediaStream = videoTrack && new MediaStream([videoTrack.track])
         ref.current.srcObject = mediaStream ? mediaStream : null
-      //console.log(`useEffect ${ref.current} = ${JSON.stringify(mediaStream?.getTracks().length)}`)
+      console.log(`useEffect ${ref.current} = ${JSON.stringify(mediaStream?.getTracks().length)}`)
     }
-  }, [])
+  }, [props.streaming.tracks])
   
   return (
     <div className="Preview">
@@ -34,6 +35,11 @@ export function Preview(props: PreviewProps) {
         copyToClipboard(`rtsp://vrc.jp/${props.streaming.id}`)
       }}>
         {t('quest')}
+      </Button>
+      <Button variant='contained' color="primary" style={mainButtonStyle} onClick={()=>{
+        props.apply()
+      }}>
+        {t('apply')}
       </Button>
       <Button variant='contained' color="secondary" style={mainButtonStyle} onClick={()=>{
         props.stop()

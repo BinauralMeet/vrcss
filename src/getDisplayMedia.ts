@@ -9,8 +9,8 @@ export async function getDisplayMedia(fps:number, w:number, h:number){
       echoCancellation: false
     },
     video: {
-    width: w ? {max: w} : undefined,
-    height: h ? {max: h} : undefined,
+    width: w ? {ideal: w} : undefined,
+    height: h ? {ideal: h} : undefined,
     frameRate: fps ? {ideal: fps}: undefined,
     }
   });

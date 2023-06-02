@@ -46,11 +46,12 @@ function App() {
   const [height, setHeight] = React.useState<number>(720)
   const [fps, setFps] = React.useState<number>(30)
   const [hint, setHint] = React.useState<string>('motion')
-  const [bitrate, setBitrate] = React.useState<number>(1500*1000)
+  const [bitrate, setBitrate] = React.useState<number>(8000)
   const [streamings, setStreamings] = React.useState(conference.streamings)
 
   const inputProps:InputProps = {'style': {color:'white', fontSize: 30, textAlignLast:'end', height: '1.1em'}}
-  const previews = streamings.map(s => <Preview streaming={s} key={s.id} stop={()=>{sharingStop(s.id)}}/>)
+  const previews = streamings.map(s => <Preview streaming={s} key={s.id} stop={()=>{sharingStop(s.id)}} 
+    apply={()=>{apply(s.id, width, height, fps, hint, bitrate*1000)}}/>)
   const search = useLocation().search
   const query = new URLSearchParams(search)
   const idInUrl = query.get('id')    
@@ -61,7 +62,7 @@ function App() {
       //console.log(`id:${id} idInUrl:${idInUrl}`)
       copyToClipboard(`rtspt://vrc.jp/${id}`)
       getDisplayMedia(fps, width, height).then((ms)=>{
-        conference.streamingStart(id, ms, bitrate).then(()=>{
+        conference.streamingStart(id, ms, bitrate*1000).then(()=>{
           ms.getVideoTracks()[0].addEventListener('ended', ()=>{
             sharingStop(id)
           })
@@ -88,6 +89,9 @@ function App() {
       })  
     })
     return promise
+  }
+  function apply(id:string, width:number, height:number, fps:number, hint:string, bitrate: number){
+    conference.applyConstrants(id, width, height, fps, hint, bitrate)
   }
   function sharingStop(id:string){
     conference.streamingStop(id)
@@ -170,7 +174,7 @@ function App() {
         {t('encode')}<TextField className="App-tf-long" label={t('videoBps')} size='small' multiline={false} InputProps={inputProps}
               value={bitrate.toString()} 
               onChange={(ev)=>{setBitrate(toInt(ev.target.value, 10))}}
-        />bps
+        />kbps
       </td>
       <td className='tdl'>
         <Button size="small" variant="contained" style={hint==='motion' ? silverButtonStyle : grayButtonStyle}
