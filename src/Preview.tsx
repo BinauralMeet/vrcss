@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react'
+import {useEffect, useRef} from 'react'
 import { useTranslation } from "./locales"
 import Button from '@mui/material/Button'
 import {Streaming} from './conference/Conference'

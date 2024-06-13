@@ -1,4 +1,3 @@
-import {EventEmitter} from 'events'
 import {MSCreateTransportMessage, MSMessage, MSPeerMessage, MSConnectMessage, MSMessageType, MSRoomMessage,
   MSRTPCapabilitiesReply, MSTransportDirection, MSCreateTransportReply, MSConnectTransportMessage,
   MSConnectTransportReply, MSProduceTransportMessage, MSProduceTransportReply, MSTrackRole,
@@ -10,6 +9,7 @@ import {MSCreateTransportMessage, MSMessage, MSPeerMessage, MSConnectMessage, MS
 import * as mediasoup from 'mediasoup-client';
 import {connLog} from './ConferenceLog'
 import {RtcTransportStatsGot} from './RtcTransportStatsGot'
+import {EventEmitter} from 'eventemitter3'
 
 export type TrackRoles = 'avatar' | 'mainScreen' | string
 export type TrackKind = 'audio' | 'video'
@@ -260,9 +260,9 @@ export class RtcConnection{
   }
   readonly pingPongTimeout = 3000
   private pingCount = 0
-  private pingTimeout?:NodeJS.Timeout = undefined
+  private pingTimeout=0
   private pingTimerFunc = () => {
-    this.pingTimeout = undefined
+    this.pingTimeout = 0
     if (this.pingCount <= 1){
       if (this.mainServer?.readyState === WebSocket.OPEN){
         const msg: MSMessage = {type:'ping'}

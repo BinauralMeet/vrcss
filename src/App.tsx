@@ -19,7 +19,7 @@ function toInt(s: string, r=10){
   else return 0
 }
 export function copyToClipboard(text: string){
-  navigator.clipboard.writeText(text).catch(e => {
+  navigator.clipboard.writeText(text).catch(_e => {
     console.warn(`Failed to copy clipboard: ${text}`)
   })
 }
@@ -57,6 +57,7 @@ function App() {
   const idInUrl = query.get('id')    
 
   function sharingStart(width:number, height:number, fps:number, hint:string){
+    console.log(`sharingStart`)
     const promise = new Promise<void>((resolve, reject) => {
       const id = idInUrl ? idInUrl : conference.createStreamId()
       //console.log(`id:${id} idInUrl:${idInUrl}`)
@@ -103,6 +104,7 @@ function App() {
       <Button variant="contained"
         style={{ ...mainButtonStyle, backgroundColor:'dimgray', position: "absolute", top: '0.2em', right: '0.4em' }}
         onClick={() => {
+          console.log('onClick Lang')
           const idx =
             (i18nSupportedLngs.findIndex((l:any) => l === i18n.language) + 1) %
             i18nSupportedLngs.length;

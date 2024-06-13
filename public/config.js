@@ -51,7 +51,7 @@ const rtcConfig = {
     dataServer: 'wss://localhost:3100',
     corsProxyUrl: 'https://binaural.me/cors_proxy/',
   }
-  Object.assign(configLocal, Object.assign(commonConfig, configLocal))
+  Object.assign(configLocal, Object.assign(commonConfig, configVrc))
   
   const config = configVrc
   

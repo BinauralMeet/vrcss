@@ -1,11 +1,11 @@
-import i18n, {TOptionsBase} from 'i18next'
+import i18n, {TOptions} from 'i18next'
 import i18nLanguageDetector from 'i18next-browser-languagedetector'
 import {initReactI18next, useTranslation as useTrans} from 'react-i18next'
 import {EnKeyList, enTranslate} from './en'
 import {JaKeyList, jaTranslate} from './ja'
 
 export type KeyList = EnKeyList & JaKeyList
-export function t(key: KeyList, options:{defaultValues: string} | TOptionsBase) {
+export function t(key: KeyList, options?:TOptions) {
   return i18n.t(key, options)
 }
 export interface UseTranslationResponse{
