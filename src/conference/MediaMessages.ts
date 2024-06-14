@@ -1,12 +1,12 @@
 import * as mediasoup from 'mediasoup-client'
 export type MSMessageType =
-  'dataConnect' |
-  'connect' | 'join' | 'ping' | 'rtpCapabilities' | 'leave' |
-  'remoteUpdate' | 'remoteLeft' |
+  'dataConnect' | 'positionConnect' | 'position' |
+  'connect' | 'preConnect' | 'join' | 'pong' | 'rtpCapabilities' | 'leave' | 'leave_error' |
+  'remoteUpdate' | 'remoteLeft' | 'checkAdmin' | 'addAdmin'| 'removeAdmin' | 'addLogin' | 'removeLogin' |
   'workerAdd' | 'workerDelete' | 'workerUpdate' |
   'createTransport' | 'closeTransport' | 'connectTransport' |
   'produceTransport' | 'closeProducer' | 'consumeTransport' | 'resumeConsumer' |
-  'streamingStart' | 'streamingStop'
+  'streamingStart' | 'streamingStop' | 'uploadFile'
 export interface MSMessage{
   type: MSMessageType
   sn?: number
@@ -15,8 +15,49 @@ export interface MSPeerMessage extends MSMessage{
   peer: string
   remote?: string
 }
+
+export type AdminResult = 'approve' | 'reject'
+
+export interface RoomLoginInfo{
+  roomName: string
+  emailSuffixes: string[],
+  admins: string[]
+}
+export interface MSCheckAdminMessage extends MSMessage{
+  room: string
+  email?: string
+  token?: string
+  result?: AdminResult
+  role?: string
+  loginInfo?: RoomLoginInfo
+}
+export interface MSAddAdminMessage extends MSMessage{
+  email: string
+  result?: AdminResult
+  loginInfo?: RoomLoginInfo
+}
+
+export interface MSUploadFileMessage extends MSMessage{
+  room?: string
+  error?: string
+  email?: string
+  file:string
+  fileID?: string
+  fileName: string
+}
+
+export interface MSPreConnectMessage extends MSMessage{
+  room: string
+  login?: boolean
+}
 export interface MSConnectMessage extends MSPeerMessage{
   peerJustBefore?: string
+  room: string
+  email?: string
+  token?: string
+  admin?: string
+  error?: string
+  role?: string
 }
 export type MSTrackRole = 'camera' | 'mic' | 'window' | string
 export interface MSRemoteProducer{
@@ -126,4 +167,14 @@ export interface MSStreamingStartMessage extends MSPeerMessage{
 }
 export interface MSStreamingStopMessage extends MSPeerMessage{
   id: string
+}
+
+export interface MSPositionConnectMessage extends MSPeerMessage{
+  id: string
+  name: string
+  room: string
+}
+export interface MSPositionMessage extends MSMessage{
+  position: number[]
+  orientation: number
 }

@@ -7,7 +7,7 @@ import { i18nInit } from './locales/index.ts'
 import { conference } from './conference/Conference.ts'
 
 i18nInit().then(()=>{
-  conference.connect()
+  conference.connectForStreaming()
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

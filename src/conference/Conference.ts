@@ -2,6 +2,7 @@ import { Producer } from "mediasoup-client/lib/Producer"
 import { MSTrack } from "./RtcConnection"
 import { RtcTransports } from "./RtcTransports"
 import { RtpCodecCapability } from "mediasoup-client/lib/RtpParameters"
+import { fixIdString } from "@models/utils"
 
 declare const d:any          //  from index.html
 
@@ -13,7 +14,9 @@ export interface Streaming{
 
 class Conference{
   streamings:Streaming[] = []
-  private rtc = new RtcTransports()
+  //  rtc (mediasoup) related
+  private rtcTransports_ = new RtcTransports()
+  public get rtcTransports(){ return this.rtcTransports_ }
   private createRandomString(len: number){
     const S="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     return Array.from(crypto.getRandomValues(new Uint32Array(len))).map((n)=>S[n%S.length]).join('')    
@@ -21,14 +24,23 @@ class Conference{
   private streamIdCount = 0
   public createStreamId(){
     this.streamIdCount++
-    return `${this.rtc.peer}_${this.streamIdCount.toString()}`
+    return `${this.rtcTransports.peer}_${this.streamIdCount.toString()}`
   }
-  public connect(){
+  public preEnter(room: string){
+    return this.rtcTransports.preConnect(fixIdString(room))
+  }
+  public connectForStreaming(){
     const room = this.createRandomString(12)
     const peer = this.createRandomString(8)
     console.log(`Connecting to main server ....`)
-    this.rtc.connect(room, peer).then(()=>{
-      console.log(`Connected as ${this.rtc.peer}`)
+    this.preEnter(room).then((bLogin)=>{
+      if (bLogin){
+        console.warn(`Login required for room ${room}`)
+      }else{
+        this.rtcTransports.connect(room, peer).then((peer)=>{
+          console.log(`Connected peer:${peer}`)
+        })
+      }
     })
   }
   public streamingStart(id:string, stream: MediaStream, maxBitRate:number){
@@ -45,20 +57,20 @@ class Conference{
       tracks.forEach(track =>{
         const msTrack:MSTrack = {
           track,
-          peer: this.rtc.peer,
+          peer: this.rtcTransports.peer,
           role: id
         }
         streaming.tracks.push(msTrack)
         let codec: RtpCodecCapability|undefined = undefined
         if (track.kind === 'video'){
-          codec = this.rtc.device?.rtpCapabilities.codecs?.find(
+          codec = this.rtcTransports.device?.rtpCapabilities.codecs?.find(
             c => c.mimeType === 'video/H264' && c.parameters['profile-level-id'] === '42e01f')
         }
-        this.rtc.prepareSendTransport(msTrack, maxBitRate, codec).then(producer=>{
+        this.rtcTransports.prepareSendTransport(msTrack, maxBitRate, codec).then(producer=>{
           streaming.producers.push(producer)
           remain--
           if (remain === 0){
-            this.rtc.streamingStart(id, streaming.producers)
+            this.rtcTransports.streamingStart(id, streaming.producers)
             resolve()
           }
         }).catch(reject)
@@ -72,9 +84,9 @@ class Conference{
       console.warn(`streamingStop(): streaming id='${id}' not found.`)
       return false
     }
-    this.rtc.streamingStop(id)
+    this.rtcTransports.streamingStop(id)
     this.streamings = this.streamings.filter(s => s.id !== id)
-    this.rtc.RemoveTrackByRole(true, id)
+    this.rtcTransports.RemoveTrackByRole(true, id)
     return true
   }
   public applyConstrants(id: string, width:number, height:number, fps:number, hint:string, bitrate: number){

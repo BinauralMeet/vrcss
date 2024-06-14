@@ -1,15 +1,17 @@
+import {EventEmitter} from 'eventemitter3'
 import {MSCreateTransportMessage, MSMessage, MSPeerMessage, MSConnectMessage, MSMessageType, MSRoomMessage,
   MSRTPCapabilitiesReply, MSTransportDirection, MSCreateTransportReply, MSConnectTransportMessage,
   MSConnectTransportReply, MSProduceTransportMessage, MSProduceTransportReply, MSTrackRole,
   MSConsumeTransportMessage, MSConsumeTransportReply, MSRemoteUpdateMessage, MSRemoteLeftMessage,
   MSResumeConsumerMessage, MSResumeConsumerReply, MSCloseProducerMessage, MSRemoteProducer,
-  MSCloseProducerReply,
-  MSStreamingStartMessage,
-  MSStreamingStopMessage} from './MediaMessages'
+  MSCloseProducerReply, MSStreamingStartMessage,MSUploadFileMessage, MSStreamingStopMessage, MSAddAdminMessage,
+  MSPreConnectMessage,
+  MSCheckAdminMessage,
+  RoomLoginInfo} from './MediaMessages'
 import * as mediasoup from 'mediasoup-client';
-import {connLog} from './ConferenceLog'
+import {connLog} from '@models/utils'
 import {RtcTransportStatsGot} from './RtcTransportStatsGot'
-import {EventEmitter} from 'eventemitter3'
+import {messageLoads} from '@stores/MessageLoads'
 
 export type TrackRoles = 'avatar' | 'mainScreen' | string
 export type TrackKind = 'audio' | 'video'
@@ -41,7 +43,9 @@ export interface RemotePeer{
 declare const config:any                  //  from ../../config.js included from index.html
 
 //  Log level and module log options
-const rtcLog = connLog
+const rtcLog = connLog()
+
+const SEND_INTERVAL = 10 * 1000
 
 type RtcConnectionEvent = 'remoteUpdate' | 'remoteLeft' | 'connect' | 'disconnect'
 
@@ -55,10 +59,12 @@ export class RtcConnection{
   private handlers = new Map<MSMessageType, (msg: MSMessage)=>void>()
   private promises = new Map<number, {resolve:(a:any)=>void, reject?:(a:any)=>void, arg?:any} >()
   private messageNumber = 1
+  private lastSendTime = 0
 
   public constructor(){
+    this.handlers.set('preConnect', this.onPreConnect)
     this.handlers.set('connect', this.onConnect)
-    this.handlers.set('ping', ()=>{})
+    this.handlers.set('pong', ()=>{})
     this.handlers.set('createTransport', this.onCreateTransport)
     this.handlers.set('rtpCapabilities', this.onRtpCapabilities)
     this.handlers.set('connectTransport', this.onConnectTransport)
@@ -68,6 +74,12 @@ export class RtcConnection{
     this.handlers.set('resumeConsumer', this.onResumeConsumer)
     this.handlers.set('remoteUpdate', this.onRemoteUpdate)
     this.handlers.set('remoteLeft', this.onRemoteLeft)
+    this.handlers.set('uploadFile', this.onUploadFile)
+    this.handlers.set('addAdmin', this.onAddRemoveAdminLogin)
+    this.handlers.set('removeAdmin', this.onAddRemoveAdminLogin)
+    this.handlers.set('addLogin', this.onAddRemoveAdminLogin)
+    this.handlers.set('removeLogin', this.onAddRemoveAdminLogin)
+    this.handlers.set('checkAdmin', this.onCheckAdmin)
     try{
       this.device = new mediasoup.Device();
     }catch (error:any){
@@ -80,42 +92,166 @@ export class RtcConnection{
     return this.connected && this.mainServer?.readyState === WebSocket.OPEN
   }
 
-
-  //  connect to main server. return my peer id got.
-  public connect(room: string, peer: string){
-    rtcLog(`rtcConn connect(${room}, ${peer})`)
-    const promise = new Promise<string>((resolve, reject)=>{
-      this.connected = true
-      try{
-        this.mainServer = new WebSocket(config.mainServer)
-      }
-      catch(e){
-        this.disconnect(3000, 'e')
-        reject(e)
-      }
-      const onOpenEvent = () => {
-        const msg:MSConnectMessage = {
-          type:'connect',
-          peer,
+  rtcQueue = Array<MSMessage>()
+  readonly INTERVAL = 100
+  private interval=0
+  private startProcessMessage(){  //  start interval timer to process message queue.
+    if (!this.interval)
+      this.interval = window.setInterval(this.processMessage.bind(this), this.INTERVAL)
+  }
+  private processMessage(){
+    if (this.mainServer && this.mainServer.readyState === WebSocket.CONNECTING){
+      return  //  wait until OEPN.
+    }
+    if (this.mainServer && this.mainServer.readyState === WebSocket.OPEN){
+      let now = Date.now()
+      if (now > this.lastSendTime + SEND_INTERVAL){
+        const msg:MSMessage = {
+          type: 'pong'
         }
-        if (this.prevPeer) {
-          msg.peerJustBefore = this.prevPeer
-          rtcLog(`reconnect with previous peer id '${this.prevPeer}'`)
-        }
-        this.sendWithPromise(msg, resolve, reject, room)
+        rtcLog("RtcC: pong sent.")
+        this.mainServer.send(JSON.stringify(msg))
+        this.lastSendTime = now
       }
-      const onMessageEvent = (ev: MessageEvent<any>)=> {
-        const msg = JSON.parse(ev.data) as MSMessage
-        this.onAnyMessageForPing()
+      const timeToProcess = this.INTERVAL * 0.5
+      const deadline = now + timeToProcess
+      while(this.rtcQueue.length && now < deadline){
+        const msg = this.rtcQueue.shift()!
+        rtcLog(`RtcC: processMessag(${msg.type})`, msg)
         const func = this.handlers.get(msg.type)
         if (func){
           func.bind(this)(msg)
         }else{
           console.error(`unhandled message ${msg.type} received`, msg)
         }
+        now = Date.now()
+      }
+      messageLoads.loadRtc = (now - (deadline-timeToProcess)) / timeToProcess
+    }else if (this.rtcQueue.length > 0){
+      console.error(`mainServer.readyState === '${this.mainServer?.readyState}' and mesgs in queue: ${JSON.stringify(this.rtcQueue)}.`)
+    }
+    //  Stop interval timer when disconnected and no messages in queue.
+    if (!this.isConnected() && this.rtcQueue.length===0 && this.interval){
+      window.clearInterval(this.interval)
+      this.interval = 0
+    }
+  }
+
+
+  // Converts a File object to a base64 string.
+  public fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  // add admin to the room
+  public addAdmin(email: string){
+    const promise = new Promise<undefined>((resolve, reject)=>{
+      const msg:MSAddAdminMessage = {
+        type:'addAdmin',
+        email: email,
+      }
+      this.sendWithPromise(msg, resolve, reject)
+    });
+    return promise
+  }
+  // remove admin from the room
+  public removeAdmin(email: string){
+    const promise = new Promise<undefined>((resolve, reject)=>{
+      const msg:MSAddAdminMessage = {
+        type:'removeAdmin',
+        email: email,
+      }
+      this.sendWithPromise(msg, resolve, reject)
+    });
+    return promise
+  }
+  // add login suffix to the room
+  public addLoginSuffix(suffix: string){
+    const promise = new Promise<undefined>((resolve, reject)=>{
+      const msg:MSAddAdminMessage = {
+        type:'addLogin',
+        email: suffix,
+      }
+      this.sendWithPromise(msg, resolve, reject)
+    });
+    return promise
+  }
+  // remove login suffix from the room
+  public removeLoginSuffix(suffix: string){
+    const promise = new Promise<undefined>((resolve, reject)=>{
+      const msg:MSAddAdminMessage = {
+        type:'removeLogin',
+        email: suffix,
+      }
+      this.sendWithPromise(msg, resolve, reject)
+    });
+    return promise
+  }
+  private onAddRemoveAdminLogin(base:MSMessage){
+    const msg = base as MSAddAdminMessage
+    if (msg.result === 'approve'){
+      this.resolveMessage(msg, msg.loginInfo)
+    }else{
+      this.rejectMessage(msg)
+    }
+  }
+
+  // Check if the user is admin
+  public checkAdmin(room: string, email?: string, token?: string){
+    const promise = new Promise<RoomLoginInfo|undefined>((resolve, reject)=>{
+      const msg:MSCheckAdminMessage = {
+        type:'checkAdmin',
+        room: room,
+        email: email,
+        token: token,
+      }
+      this.sendWithPromise(msg, resolve, reject)
+    });
+    return promise
+  }
+  private onCheckAdmin(base:MSMessage){
+    const msg = base as MSCheckAdminMessage
+    if (msg.result === 'approve'){
+      this.resolveMessage(msg, msg.loginInfo)
+    }else{
+      this.rejectMessage(msg)
+    }
+  }
+
+  // Upload file to google drive
+  public uploadFile(file:File):Promise<string>{
+
+    const promise = new Promise<string>(async (resolve, reject)=>{
+      this.connected = true
+      if (this.mainServer && this.mainServer.readyState === WebSocket.OPEN){
+        const fileBase64 = await this.fileToBase64(file);
+        const msg: MSUploadFileMessage = {
+          type:'uploadFile',
+          file: fileBase64,
+          fileName: file.name,
+        }
+        this.setMessagePromise(msg, resolve, reject)
+        this.mainServer.send(JSON.stringify(msg))
+      }
+      else{
+        console.log("mainServer not open")
+      }
+      const onOpenEvent = async () => {
+      }
+      const onMessageEvent = (ev: MessageEvent<any>)=> {
+        const msg = JSON.parse(ev.data) as MSMessage
+        //rtcLog(`onMessage(${msg.type})`)
+        this.rtcQueue.push(msg)
       }
       const onCloseEvent = () => {
-        rtcLog('onClose() for mainServer')
+        //rtcLog('onClose() for mainServer')
+        console.log('onClose() for mainServer')
         this.disconnect()
       }
       const onErrorEvent = () => {
@@ -130,9 +266,115 @@ export class RtcConnection{
         this.mainServer?.addEventListener('close', onCloseEvent)
       }
       setEventHandler()
+    });
+    return promise
+
+  }
+
+  /// Create websocket to the main server and ask whether the room requires login or not
+  public preConnect(room: string){
+    const promise = new Promise<boolean>((resolve, reject)=>{
+      this.connected = true
+      this.startProcessMessage()
+      try{
+        this.mainServer = new WebSocket(config.mainServer)
+      }
+      catch(e){
+        this.disconnect(3000, 'e')
+        reject(e)
+      }
+      const onOpenEvent = () => {
+        const msg:MSPreConnectMessage = {
+          type:'preConnect',
+          room,
+        }
+        if (this.mainServer && this.mainServer.readyState === WebSocket.OPEN){
+          this.setMessagePromise(msg, resolve, reject, room)
+          this.mainServer.send(JSON.stringify(msg))
+        }
+      }
+      const onMessageEvent = (ev: MessageEvent<any>)=> {
+        const msg = JSON.parse(ev.data) as MSMessage
+        rtcLog(`onMessage(${msg.type})`)
+        this.rtcQueue.push(msg)
+      }
+      const onCloseEvent = () => {
+        rtcLog('onClose() for mainServer')
+        this.disconnect()
+      }
+      const onErrorEvent = (ev:any) => {
+        console.error(`Error in WebSocket for ${config.mainServer}`, ev)
+        this.disconnect(3000, 'onError')
+      }
+
+      const setEventHandler = () => {
+        this.mainServer?.addEventListener('error', onErrorEvent)
+        this.mainServer?.addEventListener('message', onMessageEvent)
+        this.mainServer?.addEventListener('open', onOpenEvent)
+        this.mainServer?.addEventListener('close', onCloseEvent)
+      }
+      setEventHandler()
+    });
+    return promise
+  }
+  private onPreConnect(base: MSMessage){
+    const msg = base as MSPreConnectMessage
+    this.resolveMessage(msg, msg.login ? true : false)
+  }
+
+  //  connect to main server. return my peer id got.
+  public connect(room: string, peer: string, token?: string, email?: string){
+    if (!this.mainServer){
+      console.error(`RTCConnection: preConnect() must be called before connect().`)
+    }
+    rtcLog(`RtcC: connect(${room}, ${peer}, ${token}, ${email})`)
+    const promise = new Promise<string>((resolve, reject)=>{
+      this.connected = true
+      const msg:MSConnectMessage = {
+        type:'connect',
+        peer,
+        room,
+        token,
+        email,
+      }
+      if (this.prevPeer) {
+        msg.peerJustBefore = this.prevPeer
+        rtcLog(`reconnect with previous peer id '${this.prevPeer}'`)
+      }
+      this.sendWithPromise(msg, resolve, reject)
     })
     return promise
   }
+  private onConnect(base: MSMessage){
+    rtcLog(`RtcC: onConnect( ${JSON.stringify(base)}`)
+    const msg = base as MSConnectMessage
+    if (msg.error){
+      //  console.log(`onConnect failed: ${msg.error}`)
+      this.rejectMessage(msg)
+    }else{
+      this.peer_ = msg.peer
+      if (this.mainServer){
+        const joinMsg:MSRoomMessage = {
+          type: 'join',
+          peer:msg.peer,
+          room:msg.room
+        }
+        rtcLog(`RtcC: join sent ${JSON.stringify(joinMsg)}`)
+        this.mainServer.send(JSON.stringify(joinMsg))
+        this.lastSendTime = Date.now()
+        this.loadDevice(msg.peer).then(()=>{
+          rtcLog(`RtcC: loadDevice success.`)
+          this.resolveMessage(msg, msg.peer)
+          this.emitter.emit('connect')
+          //  this.startPingPong()
+        })
+      }else{
+        this.rejectMessage(msg)
+        throw new Error('No connection has been established.')
+      }
+    }
+  }
+
   public leave(){
     const msg:MSMessage = {
       type:'leave'
@@ -144,10 +386,11 @@ export class RtcConnection{
     return false
   }
   public disconnect(code?:number, msg?:string){
+    console.warn(`RTCConnection disconnect() called.`)
     const promise = new Promise<void>((resolve)=>{
       const func = ()=>{
         if (this.mainServer && this.mainServer.readyState === WebSocket.OPEN && this.mainServer.bufferedAmount){
-          setTimeout(func, 100)
+          window.setTimeout(func, 100)
         }else{
           if (this.mainServer?.readyState !== WebSocket.CLOSING
             && this.mainServer?.readyState !== WebSocket.CLOSED){
@@ -195,6 +438,7 @@ export class RtcConnection{
     }else{
       this.setMessagePromise(msg, resolve, reject, arg)
       this.mainServer.send(JSON.stringify(msg))
+      this.lastSendTime = Date.now()
     }
   }
   private resolveMessage(m: MSMessage, a?:any){
@@ -232,71 +476,6 @@ export class RtcConnection{
       this.device?.load({routerRtpCapabilities: msg.rtpCapabilities}).then(()=>{
         this.resolveMessage(base)
       })
-    }
-  }
-
-  private onConnect(base: MSMessage){
-    rtcLog(`onConnect( ${JSON.stringify(base)}`)
-    const msg = base as MSPeerMessage
-    this.peer_ = msg.peer
-    const room = this.getMessageArg(msg) as string
-    if (this.mainServer){
-      const joinMsg:MSRoomMessage = {
-        type: 'join',
-        peer:msg.peer,
-        room
-      }
-      rtcLog(`join sent ${JSON.stringify(joinMsg)}`)
-      this.mainServer.send(JSON.stringify(joinMsg))
-      this.loadDevice(msg.peer).then(()=>{
-        this.resolveMessage(msg, msg.peer)
-        this.emitter.emit('connect')
-        this.startPingPong()
-      })
-    }else{
-      this.rejectMessage(msg)
-      throw new Error('No connection has been established.')
-    }
-  }
-  readonly pingPongTimeout = 3000
-  private pingCount = 0
-  private pingTimeout=0
-  private pingTimerFunc = () => {
-    this.pingTimeout = 0
-    if (this.pingCount <= 1){
-      if (this.mainServer?.readyState === WebSocket.OPEN){
-        const msg: MSMessage = {type:'ping'}
-        this.mainServer!.send(JSON.stringify(msg))
-        this.pingCount += 1
-        this.pingTimeout = setTimeout(this.pingTimerFunc, this.pingPongTimeout)
-        rtcLog(`pingTimerFunc() ping sent. count=${this.pingCount}.`)
-      }else{
-        console.warn('RtcConnection: Not opened and can not send ping.')
-        this.pingCount = 0
-      }
-    }else{  //  Did not receive any message after sending two ping messages.
-      console.warn(`RtcConnection: Ping pong time out. count=${this.pingCount}`)
-      this.pingCount = 0
-      if (this.connected){
-        this.disconnect(3000, 'ping pong time out.')
-      }
-    }
-  }
-  private startPingPong(){
-    const msg: MSMessage = {type:'ping'}
-    this.mainServer?.send(JSON.stringify(msg))
-    this.pingCount = 1
-    if (this.pingTimeout){
-      console.error(`this.pingTimeout already set to ${this.pingTimeout}`)
-    }
-    this.pingTimeout = setTimeout(this.pingTimerFunc, this.pingPongTimeout)
-    rtcLog(`startPingPong() called. ping sent. count=${this.pingCount}.`)
-  }
-  private onAnyMessageForPing(){
-    this.pingCount = 0
-    if (this.pingTimeout){
-      clearTimeout(this.pingTimeout)
-      this.pingTimeout = setTimeout(this.pingTimerFunc, this.pingPongTimeout)
     }
   }
 
@@ -362,6 +541,16 @@ export class RtcConnection{
       this.resolveMessage(msg, '')
     }
 
+  }
+
+  private onUploadFile(base:MSMessage){
+    const msg = base as MSUploadFileMessage
+    if (msg.error){
+      console.log("onUploadFile error")
+      this.resolveMessage(msg, false)
+    }else{
+      this.resolveMessage(msg, msg.fileID)
+    }
   }
 
   public produceTransport(params:{transport:string, kind:mediasoup.types.MediaKind,
@@ -462,6 +651,7 @@ export class RtcConnection{
       id
     }
     this.mainServer?.send(JSON.stringify(msg))
+    this.lastSendTime = Date.now()
   }
   public streamingStop(id: string){
     const msg:MSStreamingStopMessage = {
@@ -470,6 +660,7 @@ export class RtcConnection{
       id
     }
     this.mainServer?.send(JSON.stringify(msg))
+    this.lastSendTime = Date.now()
   }
 
   private emitter = new EventEmitter()
