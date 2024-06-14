@@ -64,8 +64,10 @@ class Conference{
         let codec: RtpCodecCapability|undefined = undefined
         if (track.kind === 'video'){
           codec = this.rtcTransports.device?.rtpCapabilities.codecs?.find(
-            c => c.mimeType === 'video/H264' && c.parameters['profile-level-id'] === '42e01f')
+            c => c.mimeType === 'video/H264' && c.parameters['profile-level-id'] === '4d001f')
         }
+        //  console.log(`codecAll:${JSON.stringify(this.rtcTransports.device?.rtpCapabilities.codecs)}`)
+        //  console.log(`codec:${JSON.stringify(codec)}`)
         this.rtcTransports.prepareSendTransport(msTrack, maxBitRate, codec).then(producer=>{
           streaming.producers.push(producer)
           remain--
