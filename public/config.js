@@ -53,5 +53,4 @@ const rtcConfig = {
   }
   Object.assign(configLocal, Object.assign(commonConfig, configLocal))
   
-  const config = configLocal
- 
+  const config = configVrc 

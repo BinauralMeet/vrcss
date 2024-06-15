@@ -38,7 +38,7 @@ class Conference{
         console.warn(`Login required for room ${room}`)
       }else{
         this.rtcTransports.connect(room, peer).then((peer)=>{
-          console.log(`Connected peer:${peer}`)
+          console.log(`Connected peer:${peer} room:${room}`)
         })
       }
     })
@@ -75,7 +75,10 @@ class Conference{
             this.rtcTransports.streamingStart(id, streaming.producers)
             resolve()
           }
-        }).catch(reject)
+        }).catch((e)=>{
+          console.log(`prepareSendTransport() failed ${e}`)
+          reject(e)
+        })
       }) 
     })
     return promise
